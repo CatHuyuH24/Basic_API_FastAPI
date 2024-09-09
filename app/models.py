@@ -1,5 +1,6 @@
 # every model represents a table in the database
 from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
 from .database import Base # local package
 from sqlalchemy.sql.expression import text
 
@@ -13,6 +14,8 @@ class Post(Base):
     published = Column(type_=Boolean, server_default='TRUE', nullable=False)
     created_at = Column(type_=TIMESTAMP(timezone=True), server_default=text('NOW()'), nullable=False)
 
+    owner = relationship("User")
+    
 class User(Base):
     __tablename__ = "users"
     user_id = Column(type_=Integer, primary_key=True, nullable=False)

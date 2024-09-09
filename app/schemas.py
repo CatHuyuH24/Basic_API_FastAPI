@@ -8,18 +8,6 @@ class ResponseModel:
     class Config:
         from_attributes = True
 
-class PostBase(BaseModel): 
-    title: str
-    content: str
-    published: bool = True
-
-class PostCreate(PostBase):
-    pass
-
-class PostResponse(PostBase, ResponseModel):
-    post_id: int
-    created_at: datetime
-
 class UserBase(BaseModel):
     username: str
     email: EmailStr | None = None
@@ -36,6 +24,21 @@ class UserResponse(UserBase, ResponseModel):
     user_id: int
     role: str
     created_at: datetime
+
+class PostBase(BaseModel): 
+    title: str
+    content: str
+    published: bool = True
+
+class PostCreate(PostBase):
+    pass
+
+class OwnerInfo(UserBase):
+    pass
+class PostResponse(PostBase, ResponseModel):
+    post_id: int
+    created_at: datetime
+    owner: OwnerInfo
 
 class Token(BaseModel):
     access_token: str
