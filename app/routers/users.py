@@ -17,11 +17,11 @@ def create_a_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @router.get("/admin/", response_model=list[schemas.UserResponse])
-def get_all_users_for_admin(db: Session = Depends(get_db), user_token: schemas.TokenData = Depends(oauth2.get_current_user), limit: int = 5):
+def get_all_users_for_admin(db: Session = Depends(get_db), user_token: schemas.TokenData = Depends(oauth2.get_current_user), limit: int = 5, skip: int = 0):
     print(user_token.role)
     if user_token.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-    users = db.query(models.User).limit(limit).all()
+    users = db.query(models.User).limit(limit).limit(limit).offset(skip).all()
     return users
 
 @router.get("/{user_id}", response_model=schemas.UserResponse)
