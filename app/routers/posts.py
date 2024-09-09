@@ -14,7 +14,7 @@ router = APIRouter( prefix="/posts", tags=['Posts'])
 
 @router.get("/admin", response_model = list[schemas.PostResponse])
 def get_all_posts_for_admin(db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    if user.role != "admin":
+    if user.role != schemas.VALID_ROLES.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     posts = db.query(models.Post).all()
     return posts
@@ -27,8 +27,7 @@ def get_all_posts_for_admin(db: Session = Depends(get_db), user: models.User = D
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
 def create_one_post(post: schemas.PostCreate, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    new_post = models.Post(**post.model_dump(mode='json'))
-    new_post.user_id = user.user_id
+    new_post = models.Post(user_id=user.user_id,**post.model_dump(mode='json'))
     db.add(new_post)
     db.commit()
     db.refresh(new_post) # to get the new post with its ID (like 'RETURNING' at the end in SQL)
@@ -67,7 +66,7 @@ def get_one_post(id: int, db: Session = Depends(get_db), user: models.User = Dep
     post = db.query(models.Post).filter(and_(models.Post.post_id == id, models.Post.user_id == user.user_id)).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"Post with ID {id} of user {user.user_id} was not found")
+                            detail=f"User with id {user.user_id} does not have any posts with id {id}")
     return post
     
 # RAW SQL
@@ -81,10 +80,10 @@ def get_one_post(id: int, db: Session = Depends(get_db), user: models.User = Dep
         
 @router.delete("/{id}",status_code= status.HTTP_204_NO_CONTENT)
 def delete_one_post(id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    post_query = db.query(models.Post).filter(and_(models.Post.id == id, models.Post.user_id == user.user_id))
+    post_query = db.query(models.Post).filter(and_(models.Post.post_id == id, models.Post.user_id == user.user_id))
     if not post_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"Post with ID {id} of user {user.user_id} was not found")
+                            detail=f"User with id {user.user_id} does not have any posts with id {id}")
     post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -104,9 +103,10 @@ def update_one_whole_post(id: int, post: schemas.PostCreate, db: Session = Depen
     post_query = db.query(models.Post).filter(and_(models.Post.post_id == id, models.Post.user_id == user.user_id))
     db_post = post_query.first()
     if not db_post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with ID {id} of user {user.user_id} was NOT FOUND")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {user.user_id} does not have any posts with id {id}")
     
     post_query.update(post.model_dump(mode='json'), synchronize_session=False)
+    db.refresh(db_post)
     db.commit()
     return db_post
     

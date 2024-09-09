@@ -18,30 +18,23 @@ class PostCreate(PostBase):
 
 class PostResponse(PostBase, ResponseModel):
     post_id: int
-    user_id: int
     created_at: datetime
 
 class UserBase(BaseModel):
     username: str
     email: EmailStr | None = None
 
-class VALID_ROLES(Enum):
+class VALID_ROLES(str, Enum):
     user = "user"
     admin = "admin"
 
 class UserCreate(UserBase):
     password: str
     role: VALID_ROLES = VALID_ROLES.user
-    @field_validator('role')
-    def check_lowercase_role(cls, v):
-        if isinstance(v, str):
-            return v.lower()
-        else:
-            raise ValueError("Role must be a string") #
-
 
 class UserResponse(UserBase, ResponseModel):
     user_id: int
+    role: str
     created_at: datetime
 
 class Token(BaseModel):
