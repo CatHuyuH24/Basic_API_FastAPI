@@ -61,12 +61,12 @@ def get_all_posts_for_user(db: Session = Depends(get_db), user: models.User = De
 #         print("Trying to GET a post with ID:\nException occurred while converting ID to int type")
 #         raise ValueError("ID received is not a valid number (not convertable to int)") 
 
-@router.get("/{id}", response_model=schemas.PostResponse)
-def get_one_post(id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    post = db.query(models.Post).filter(and_(models.Post.post_id == id, models.Post.user_id == user.user_id)).first()
+@router.get("/{post_id}", response_model=schemas.PostResponse)
+def get_one_post(post_id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
+    post = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id)).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"User with id {user.user_id} does not have any posts with id {id}")
+                            detail=f"User with id {user.user_id} does not have any posts with id {post_id}")
     return post
     
 # RAW SQL
@@ -78,12 +78,12 @@ def get_one_post(id: int, db: Session = Depends(get_db), user: models.User = Dep
 #     return {"post":post}
 
         
-@router.delete("/{id}",status_code= status.HTTP_204_NO_CONTENT)
-def delete_one_post(id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    post_query = db.query(models.Post).filter(and_(models.Post.post_id == id, models.Post.user_id == user.user_id))
+@router.delete("/{post_id}",status_code= status.HTTP_204_NO_CONTENT)
+def delete_one_post(post_id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
+    post_query = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id))
     if not post_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"User with id {user.user_id} does not have any posts with id {id}")
+                            detail=f"User with id {user.user_id} does not have any posts with id {post_id}")
     post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -98,12 +98,12 @@ def delete_one_post(id: int, db: Session = Depends(get_db), user: models.User = 
 #     conn.commit()
 #     return Response(status_code=status.HTTP_204_NO_CONTENT)
     
-@router.put("/{id}", response_model=schemas.PostResponse, status_code=status.HTTP_200_OK)
-def update_one_whole_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    post_query = db.query(models.Post).filter(and_(models.Post.post_id == id, models.Post.user_id == user.user_id))
+@router.put("/{post_id}", response_model=schemas.PostResponse, status_code=status.HTTP_200_OK)
+def update_one_whole_post(post_id: int, post: schemas.PostCreate, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
+    post_query = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id))
     db_post = post_query.first()
     if not db_post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {user.user_id} does not have any posts with id {id}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {user.user_id} does not have any posts with id {post_id}")
     
     post_query.update(post.model_dump(mode='json'), synchronize_session=False)
     db.refresh(db_post)
