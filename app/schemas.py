@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 # if expect to return a token from the front-end, it's best to utilize schemas

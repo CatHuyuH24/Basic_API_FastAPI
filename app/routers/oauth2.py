@@ -6,27 +6,20 @@ from sqlalchemy.orm import Session
 
 from .. import schemas, models
 from ..database import get_db
+from ..config import settings
 
-# SECRET_KEY
-SECRECT_KEY = "2$%^2465c&^=-?<`~ion123knm123b5,12b3nm21jjk99918kkl1!!k2b@@kl2(**kxziynt23)"
-
-# ALGORITHM
-ALGORITHM = "HS256"
-
-# EXPIRATION TIME
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(tz=timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     to_encode['exp'] = expire
-    return jwt.encode(to_encode, SECRECT_KEY, algorithm=ALGORITHM) # a string, not a list
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm) # a string, not a list
 
 def verify_and_extract_access_token(token: str, credentials_exception):
     try:
-        payload = jwt.decode(token, SECRECT_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         id: int = payload.get("user_id")
         role: str = payload.get("role")
         if not id or not role:

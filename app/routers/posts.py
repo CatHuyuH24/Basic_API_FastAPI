@@ -14,14 +14,10 @@ router = APIRouter( prefix="/posts", tags=['Posts'])
 
 @router.get("/admin", response_model = list[schemas.PostResponse])
 def get_all_posts_for_admin(db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user), 
-                             contained_in_title: Optional[str] = None,limit: int = 5, skip: int = 0):
+                             contained_in_title: Optional[str] = "",limit: int = 5, skip: int = 0):
     if user.role != schemas.VALID_ROLES.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-    posts = db.query(models.Post)
-    if contained_in_title:
-        posts = posts.filter(models.Post.title.contains(contained_in_title)).limit(limit).offset(skip).all()
-    else:
-        posts = posts.limit(limit).offset(skip).all()
+    posts = db.query(models.Post).filter(models.Post.title.contains(contained_in_title)).limit(limit).offset(skip).all()
     return posts
 
 # RAW SQL
@@ -50,7 +46,7 @@ def create_one_post(post: schemas.PostCreate, db: Session = Depends(get_db), use
 
 @router.get("/", response_model=list[schemas.PostResponse])
 def get_all_posts_for_user(db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user),
-                            contained_in_title: Optional[str] = None, limit: int = 5, skip: int = 0):
+                            contained_in_title: Optional[str] = "", limit: int = 5, skip: int = 0):
     roles = set(role for role in schemas.VALID_ROLES)
     if user.role not in roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")

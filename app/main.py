@@ -1,10 +1,13 @@
 from fastapi import FastAPI
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
 from .database import engine
 from . import models
 from .routers import posts, users, auth
+
+# import psycopg2
+# from psycopg2.extras import RealDictCursor
+# import time
+
+
 
 models.Base.metadata.create_all(bind=engine) # create the tables in the database
 
