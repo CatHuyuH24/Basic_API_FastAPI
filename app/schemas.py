@@ -50,7 +50,10 @@ class TokenData(BaseModel):
 
 class Vote(BaseModel):
     post_id: int
-    upvote: bool = True # True for upvote, False for downvote
+    upvote: bool # True for upvote, False for downvote
 
 class VoteResponse(Vote, ResponseModel):
+    post_id: int
+    user_id: int
+    upvote: bool
 
