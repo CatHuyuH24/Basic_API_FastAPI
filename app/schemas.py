@@ -6,7 +6,7 @@ from datetime import datetime
 # schemas -> to control what the front-end can send to us (the back-end) and vice versa
 class ResponseModel:
     class Config:
-        from_attributes = True
+        from_attributes = True # allow Pydantic to work with ORM models (SQLAlchemy)
 
 class UserBase(BaseModel):
     username: str
@@ -47,3 +47,10 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     id: int
     role: str = "user"
+
+class Vote(BaseModel):
+    post_id: int
+    upvote: bool = True # True for upvote, False for downvote
+
+class VoteResponse(Vote, ResponseModel):
+
