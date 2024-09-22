@@ -1,6 +1,9 @@
 from fastapi import status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.sql.expression import and_
+
+from ..logging import logging
 from .. import models, schemas
 from ..database import get_db
 from . import oauth2
@@ -35,4 +38,17 @@ def vote(vote: schemas.Vote, db: Session = Depends(get_db), current_user: models
     except (Exception, SQLAlchemyError) as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Request to vote on post with id {vote.post_id} by User with id {current_user.user_id} failed")
-            
+
+@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_one_vote(post_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+    vote_query = db.query(models.Vote).filter(and_(models.Vote.user_id == current_user.user_id, models.Vote.post_id == post_id))
+    if not vote_query.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {current_user.user_id} has not voted on post with id {post_id}")
+    else:
+        try:
+            vote_query.delete(synchronize_session=False)
+            db.commit()
+        except (Exception, SQLAlchemyError) as e:
+            db.rollback()
+            logging.error(f"Request to delete vote on post with id {post_id} by User with id {current_user.user_id} failed", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Request to delete vote on post with id {post_id} by User with id {current_user.user_id} failed")

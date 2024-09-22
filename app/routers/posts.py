@@ -2,8 +2,10 @@ from typing import Optional
 from fastapi import status, HTTPException, Response, Depends, APIRouter
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
-from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
+
+from ..logging import logging
 from .. import models, schemas
 # from ..router.main import router # NOT CORRECT! --> USER ROUTERS
 from ..database import get_db
@@ -11,6 +13,8 @@ from . import oauth2
 
 router = APIRouter( prefix="/posts", tags=['Posts'])
 
+# Configure logging
+logging.basicConfig(filename="app_errors.log",level=logging.ERROR, format='%(asctime)s %(levelname)s %(message)s')
 
 @router.get("/admin", response_model = list[schemas.PostResponse])
 def get_all_posts_for_admin(db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user), 
@@ -86,9 +90,15 @@ def delete_one_post(post_id: int, db: Session = Depends(get_db), user: models.Us
     if not post_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"User with id {user.user_id} does not have any posts with id {post_id}")
-    post_query.delete(synchronize_session=False)
-    db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    try:
+        post_query.delete(synchronize_session=False)
+        db.commit()
+    except (Exception, SQLAlchemyError) as e:
+        db.rollback()
+        # logging.error(f"Request to delete post with id {post_id} by User with id {user.user_id} failed")
+        logging.error(f"Request to delete post with id {post_id} by User with id {user.user_id} failed", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail=f"Request to delete post with id {post_id} by User with id {user.user_id} failed")
 
 # RAW SQL
 # def delete_one_post(id: int):
