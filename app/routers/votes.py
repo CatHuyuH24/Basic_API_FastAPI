@@ -52,3 +52,17 @@ def delete_one_vote(post_id: int, db: Session = Depends(get_db), current_user: m
             db.rollback()
             logging.error(f"Request to delete vote on post with id {post_id} by User with id {current_user.user_id} failed", exc_info=True)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Request to delete vote on post with id {post_id} by User with id {current_user.user_id} failed")
+        
+@router.get("/admin",status_code=status.HTTP_200_OK, response_model=list[schemas.VoteResponse])
+def get_all_votes_for_admin(db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user), limit: int = 10):
+    if current_user.role != schemas.VALID_ROLES.admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    votes = db.query(models.Vote).limit(limit).all()
+    return votes
+
+@router.get("/",status_code=status.HTTP_200_OK, response_model=list[schemas.VoteResponse])
+def get_all_votes_for_user(db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user), limit: int = 10):
+    if current_user.role not in schemas.VALID_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    votes = db.query(models.Vote).filter(models.Vote.user_id == current_user.user_id).limit(limit).all()
+    return votes

@@ -48,11 +48,10 @@ def create_one_post(post: schemas.PostCreate, db: Session = Depends(get_db), use
 #     conn.commit() # to confirm and finalize the transaction
 #     return {"new_post": newly_created_post}
 
-@router.get("/", response_model=list[schemas.PostResponse])
+@router.get("/",status_code=status.HTTP_200_OK, response_model=list[schemas.PostResponse])
 def get_all_posts_for_user(db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user),
                             contained_in_title: Optional[str] = "", limit: int = 5, skip: int = 0):
-    roles = set(role for role in schemas.VALID_ROLES)
-    if user.role not in roles:
+    if user.role not in schemas.VALID_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     posts = db.query(models.Post).filter(models.Post.user_id == user.user_id).filter(models.Post.title.contains(contained_in_title)).limit(limit).offset(skip).all()
     return posts
@@ -67,7 +66,7 @@ def get_all_posts_for_user(db: Session = Depends(get_db), user: models.User = De
 #         print("Trying to GET a post with ID:\nException occurred while converting ID to int type")
 #         raise ValueError("ID received is not a valid number (not convertable to int)") 
 
-@router.get("/{post_id}", response_model=schemas.PostResponse)
+@router.get("/{post_id}",status_code=status.HTTP_200_OK, response_model=schemas.PostResponse)
 def get_one_post(post_id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
     post = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id)).first()
     if not post:
@@ -110,7 +109,7 @@ def delete_one_post(post_id: int, db: Session = Depends(get_db), user: models.Us
 #     conn.commit()
 #     return Response(status_code=status.HTTP_204_NO_CONTENT)
     
-@router.put("/{post_id}", response_model=schemas.PostResponse, status_code=status.HTTP_200_OK)
+@router.put("/{post_id}",status_code=status.HTTP_200_OK, response_model=schemas.PostResponse)
 def update_one_whole_post(post_id: int, post: schemas.PostCreate, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
     post_query = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id))
     db_post = post_query.first()
