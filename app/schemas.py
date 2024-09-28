@@ -28,7 +28,7 @@ class UserResponse(UserBase, ResponseModel):
 class PostBase(BaseModel): 
     title: str
     content: str
-    published: bool = True
+    published: bool
 
 class PostCreate(PostBase):
     pass
@@ -40,13 +40,18 @@ class PostResponse(PostBase, ResponseModel):
     created_at: datetime
     owner: OwnerInfo
 
+class PostWithVoteCountResponse(BaseModel, ResponseModel):
+    Post: PostResponse
+    number_of_likes: int
+    number_of_dislikes: int
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
     id: int
-    role: str = "user"
+    role: str
 
 class Vote(BaseModel):
     post_id: int

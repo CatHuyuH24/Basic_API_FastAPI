@@ -15,7 +15,8 @@ class Post(Base):
     created_at = Column(type_=TIMESTAMP(timezone=True), server_default=text('NOW()'), nullable=False)
 
     owner = relationship("User")
-    
+    # number_of_likes; number_of_dislikes -> do not try to compute here, but in the logic query (posts.py)
+
 class User(Base):
     __tablename__ = "users"
     user_id = Column(type_=Integer, primary_key=True)

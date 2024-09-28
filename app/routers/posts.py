@@ -1,6 +1,6 @@
 from typing import Optional
-from fastapi import status, HTTPException, Response, Depends, APIRouter
-from sqlalchemy import and_
+from fastapi import status, HTTPException, Depends, APIRouter
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -18,7 +18,7 @@ logging.basicConfig(filename="app_errors.log",level=logging.ERROR, format='%(asc
 
 @router.get("/admin", response_model = list[schemas.PostResponse])
 def get_all_posts_for_admin(db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user), 
-                             contained_in_title: Optional[str] = "",limit: int = 5, skip: int = 0):
+                             contained_in_title: Optional[str] = "",limit: int = 100, skip: int = 0):
     if user.role != schemas.VALID_ROLES.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     posts = db.query(models.Post).filter(models.Post.title.contains(contained_in_title)).limit(limit).offset(skip).all()
@@ -48,13 +48,29 @@ def create_one_post(post: schemas.PostCreate, db: Session = Depends(get_db), use
 #     conn.commit() # to confirm and finalize the transaction
 #     return {"new_post": newly_created_post}
 
-@router.get("/",status_code=status.HTTP_200_OK, response_model=list[schemas.PostResponse])
+# @router.get("/",status_code=status.HTTP_200_OK, response_model=list[schemas.PostResponse])
+@router.get("/",status_code=status.HTTP_200_OK, response_model=list[schemas.PostWithVoteCountResponse])
 def get_all_posts_for_user(db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user),
-                            contained_in_title: Optional[str] = "", limit: int = 5, skip: int = 0):
+                            contained_in_title: Optional[str] = "", limit: int = 100, skip: int = 0):
     if user.role not in schemas.VALID_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-    posts = db.query(models.Post).filter(models.Post.user_id == user.user_id).filter(models.Post.title.contains(contained_in_title)).limit(limit).offset(skip).all()
-    return posts
+
+    posts_with_num_of_likes_query = (
+        db.query(
+            models.Post,
+            func.sum(case((models.Vote.upvote == True, 1), else_=0)).label("number_of_likes"),
+            func.sum(case((models.Vote.upvote == False, 1), else_=0)).label("number_of_dislikes")
+        )
+        .join(models.Vote, models.Post.post_id == models.Vote.post_id, isouter=True)
+        .filter(models.Post.user_id == user.user_id)
+        .filter(models.Post.title.contains(contained_in_title))
+        .group_by(models.Post.post_id)
+        .limit(limit)
+        .offset(skip)
+    )  
+    print(posts_with_num_of_likes_query)
+    print(posts_with_num_of_likes_query.all())
+    return posts_with_num_of_likes_query.all()
 
 # the following is server-side raising error only
 # @router.get("/posts/{id}") #{id} is a 'path parameter', FastAPI will automatically extract this id
@@ -68,7 +84,8 @@ def get_all_posts_for_user(db: Session = Depends(get_db), user: models.User = De
 
 @router.get("/{post_id}",status_code=status.HTTP_200_OK, response_model=schemas.PostResponse)
 def get_one_post(post_id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    post = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id)).first()
+    post = db.query(models.Post).filter(models.Post.post_id == post_id).filter( models.Post.user_id == user.user_id).first()
+    print(type(post))
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"User with id {user.user_id} does not have any posts with id {post_id}")
@@ -85,7 +102,7 @@ def get_one_post(post_id: int, db: Session = Depends(get_db), user: models.User 
         
 @router.delete("/{post_id}",status_code= status.HTTP_204_NO_CONTENT)
 def delete_one_post(post_id: int, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    post_query = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id))
+    post_query = db.query(models.Post).filter(models.Post.post_id == post_id).filter(models.Post.user_id == user.user_id)
     if not post_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"User with id {user.user_id} does not have any posts with id {post_id}")
@@ -111,7 +128,7 @@ def delete_one_post(post_id: int, db: Session = Depends(get_db), user: models.Us
     
 @router.put("/{post_id}",status_code=status.HTTP_200_OK, response_model=schemas.PostResponse)
 def update_one_whole_post(post_id: int, post: schemas.PostCreate, db: Session = Depends(get_db), user: models.User = Depends(oauth2.get_current_user)):
-    post_query = db.query(models.Post).filter(and_(models.Post.post_id == post_id, models.Post.user_id == user.user_id))
+    post_query = db.query(models.Post).filter(models.Post.post_id == post_id).filter(models.Post.user_id == user.user_id)
     db_post = post_query.first()
     if not db_post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {user.user_id} does not have any posts with id {post_id}")
