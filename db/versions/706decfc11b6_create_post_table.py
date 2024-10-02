@@ -26,7 +26,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None: #handle the new changes - adding more
     op.create_table(
         "posts", 
-        sa.Column("post_id",sa.Integer(), nullable=False, primary_key=True),
+        sa.Column("post_id",sa.Integer(), nullable=False, primary_key=True, autoincrement=True),
         sa.Column("user_id",sa.Integer(), nullable=False))
     pass
 
