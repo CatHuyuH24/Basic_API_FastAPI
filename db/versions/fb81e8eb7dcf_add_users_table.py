@@ -19,8 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.create_table
-    ("users",
+    op.create_table("users",
      sa.Column("user_id", sa.Integer(), nullable=False, autoincrement=True),
      sa.Column("email", sa.String(), nullable=True),
      sa.Column("password", sa.String(), nullable=False),
@@ -28,11 +27,20 @@ def upgrade() -> None:
      sa.Column("role", sa.String(), nullable=False),
      sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text('NOW()')),
      sa.PrimaryKeyConstraint("user_id", name="users_pkey"),
-     sa.UniqueConstraint("email", name="users_email_unique"),
+     sa.UniqueConstraint("email", name="users_email_unique")
      )
-    pass
+    pass    
 
 
 def downgrade() -> None:
-    op.drop_table("users")
+    # op.drop_table("users")
     pass
+
+# op.create_table(..
+# ..
+# ) --> script is fine
+
+# op.create_table
+# (
+# ...
+# ) --> does not work
