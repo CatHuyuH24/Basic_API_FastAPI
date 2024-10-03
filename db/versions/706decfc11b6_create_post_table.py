@@ -17,8 +17,6 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# op means operation; sa means sqlalchemy; the first is the table's name, subsequent are the columns
-
 def upgrade() -> None: #handle the new changes - adding more
     op.create_table(
         "posts", 
