@@ -28,7 +28,7 @@ class User(Base):
 
 class Vote(Base):
     __tablename__ = "votes"
-    owner_id = Column(ForeignKey("users.owner_id", ondelete="CASCADE"), type_=Integer,primary_key=True)
+    user_id = Column(ForeignKey("users.user_id", ondelete="CASCADE"), type_=Integer,primary_key=True)
     post_id = Column(ForeignKey("posts.post_id", ondelete="CASCADE"),type_=Integer, primary_key=True)
     upvote = Column(type_=Boolean, nullable=False)
     created_at = Column(type_=TIMESTAMP(timezone=True), server_default=text('NOW()'), nullable=False)
